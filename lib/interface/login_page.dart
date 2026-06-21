@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import '../application/login_service.dart'; 
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget { 
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  // Controladores para capturar lo que el usuario escribe
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final LoginService _service = LoginService();
 
   @override
   Widget build(BuildContext context) {
@@ -12,17 +23,29 @@ class LoginPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const TextField(
-              decoration: InputDecoration(labelText: "Correo electrónico"),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(labelText: "Correo electrónico"),
             ),
             const SizedBox(height: 20),
-            const TextField(
+            TextField(
+              controller: _passwordController,
               obscureText: true,
-              decoration: InputDecoration(labelText: "Contraseña"),
+              decoration: const InputDecoration(labelText: "Contraseña"),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                // Lógica de validación usando el servicio
+                final email = _emailController.text;
+                final password = _passwordController.text;
+
+                if (_service.validateEmail(email) && _service.validatePassword(password)) {
+                  print("¡Datos válidos!");
+                } else {
+                  print("Error: Datos incorrectos");
+                }
+              },
               child: const Text("Ingresar"),
             ),
           ],
