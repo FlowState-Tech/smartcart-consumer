@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,7 +25,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
-      appBar: AppBar(
+      appBar: _currentIndex == 4 ? null : AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
         centerTitle: true,
@@ -37,15 +38,17 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      body: Center(
-        child: Text(
-          "Vista de ${_titles[_currentIndex]} en construcción",
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            color: Colors.grey[500],
-          ),
-        ),
-      ),
+      body: _currentIndex == 4 
+          ? const ProfilePage()
+          : Center(
+              child: Text(
+                "Vista de ${_titles[_currentIndex]} en construcción",
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  color: Colors.grey[500],
+                ),
+              ),
+            ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
