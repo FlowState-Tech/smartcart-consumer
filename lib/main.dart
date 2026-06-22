@@ -32,7 +32,7 @@ class SmartCartApp extends StatelessWidget {
             textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
             useMaterial3: true,
           ),
-          darkTheme: ThemeData(
+            darkTheme: ThemeData(
             brightness: Brightness.dark,
             colorScheme: ColorScheme.fromSeed(
               brightness: Brightness.dark,
@@ -42,7 +42,7 @@ class SmartCartApp extends StatelessWidget {
             ),
             textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
             useMaterial3: true,
-            scaffoldBackgroundColor: const Color(0xFF121212),
+            scaffoldBackgroundColor: const Color(0xFF1C1C1C),
           ),
           home: const LoginPage(),
         );

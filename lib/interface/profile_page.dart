@@ -17,7 +17,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     // Detectamos si estamos en modo oscuro o claro para los colores
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF2A2A2A) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[500];
     final borderColor = isDark ? Colors.grey[800]! : Colors.grey[200]!;

@@ -23,10 +23,15 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navBarColor = isDark ? const Color(0xFF2A2A2A) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final unselectedColor = isDark ? Colors.grey[600] : Colors.grey[400];
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: _currentIndex == 4 ? null : AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: navBarColor,
         elevation: 1,
         centerTitle: true,
         title: Text(
@@ -34,7 +39,7 @@ class _HomePageState extends State<HomePage> {
           style: GoogleFonts.inter(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: textColor,
           ),
         ),
       ),
@@ -57,10 +62,10 @@ class _HomePageState extends State<HomePage> {
           });
         },
         selectedItemColor: const Color(0xFF4A89DC),
-        unselectedItemColor: Colors.grey[400],
+        unselectedItemColor: unselectedColor,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
+        backgroundColor: navBarColor,
         selectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
         unselectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
         items: const [

@@ -34,13 +34,19 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2A2A2A) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final borderColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final iconBgColor = isDark ? Colors.grey[800] : const Color(0xFFF7F8FA);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -51,11 +57,11 @@ class _RegisterPageState extends State<RegisterPage> {
               margin: const EdgeInsets.symmetric(horizontal: 24),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                     blurRadius: 20,
                     offset: const Offset(0, 5),
                   )
@@ -71,7 +77,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FA),
+                        color: iconBgColor,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Center(
@@ -121,7 +127,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           "Acepto los Términos y Condiciones",
                           style: GoogleFonts.inter(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                       ),
@@ -178,17 +184,23 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildTextField(String hint, {bool obscureText = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final borderColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final fillColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFFCFCFD);
+
     return TextField(
       obscureText: obscureText,
+      style: GoogleFonts.inter(color: textColor),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
         filled: true,
-        fillColor: const Color(0xFFFCFCFD),
+        fillColor: fillColor,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

@@ -40,8 +40,16 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2A2A2A) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final borderColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final fillColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFFCFCFD);
+    final iconBgColor = isDark ? Colors.grey[800] : const Color(0xFFF7F8FA);
+    final dividerColor = isDark ? Colors.grey[800] : Colors.grey[300];
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB), // Muy ligero fondo gris como se ve alrededor de la tarjeta en el mockup, o blanco
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -49,11 +57,11 @@ class _LoginPageState extends State<LoginPage> {
               margin: const EdgeInsets.symmetric(horizontal: 24),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
                     blurRadius: 20,
                     offset: const Offset(0, 5),
                   )
@@ -63,13 +71,13 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo Placeholder (Simulando el logo del carrito)
+                  // Logo Placeholder
                   Center(
                     child: Container(
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FA),
+                        color: iconBgColor,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Center(
@@ -86,15 +94,16 @@ class _LoginPageState extends State<LoginPage> {
                   // Email Field
                   TextField(
                     controller: _emailController,
+                    style: GoogleFonts.inter(color: textColor),
                     decoration: InputDecoration(
                       hintText: "Email",
                       hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
                       filled: true,
-                      fillColor: const Color(0xFFFCFCFD),
+                      fillColor: fillColor,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: borderColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -108,15 +117,16 @@ class _LoginPageState extends State<LoginPage> {
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
+                    style: GoogleFonts.inter(color: textColor),
                     decoration: InputDecoration(
                       hintText: "Contraseña",
                       hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
                       filled: true,
-                      fillColor: const Color(0xFFFCFCFD),
+                      fillColor: fillColor,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: borderColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -151,7 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                   // Divider "o"
                   Row(
                     children: [
-                      Expanded(child: Divider(color: Colors.grey[300])),
+                      Expanded(child: Divider(color: dividerColor)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -159,7 +169,7 @@ class _LoginPageState extends State<LoginPage> {
                           style: GoogleFonts.inter(color: Colors.grey[500]),
                         ),
                       ),
-                      Expanded(child: Divider(color: Colors.grey[300])),
+                      Expanded(child: Divider(color: dividerColor)),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -167,9 +177,9 @@ class _LoginPageState extends State<LoginPage> {
                   // Social Buttons
                   Row(
                     children: [
-                      Expanded(child: _socialButton("Google")),
+                      Expanded(child: _socialButton("Google", borderColor, textColor, isDark)),
                       const SizedBox(width: 16),
-                      Expanded(child: _socialButton("Apple")),
+                      Expanded(child: _socialButton("Apple", borderColor, textColor, isDark)),
                     ],
                   ),
                   const SizedBox(height: 40),
@@ -218,12 +228,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _socialButton(String label) {
+  Widget _socialButton(String label, Color borderColor, Color textColor, bool isDark) {
     return OutlinedButton(
       onPressed: () {},
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        side: BorderSide(color: Colors.grey[300]!),
+        side: BorderSide(color: borderColor),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -235,7 +245,7 @@ class _LoginPageState extends State<LoginPage> {
             width: 16,
             height: 16,
             decoration: BoxDecoration(
-              color: Colors.grey[400], // Cuadrado gris placeholder como en la imagen
+              color: isDark ? Colors.grey[600] : Colors.grey[400],
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -243,7 +253,7 @@ class _LoginPageState extends State<LoginPage> {
           Text(
             label,
             style: GoogleFonts.inter(
-              color: Colors.black87,
+              color: textColor,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
