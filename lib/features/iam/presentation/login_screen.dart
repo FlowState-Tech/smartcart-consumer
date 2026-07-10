@@ -2,14 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/auth_notifier.dart';
 import '../application/auth_state.dart';
-import '../../../core/di/injection_container.dart';
-import '../../../core/presentation/main_navigation_screen.dart';
 import '../../../core/theme/smartcart_theme.dart';
 import 'signup_screen.dart';
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return sl<AuthNotifier>();
-});
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +13,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
@@ -28,10 +22,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (next is AuthError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.message), backgroundColor: Colors.red),
-        );
-      } else if (next is AuthAuthenticated) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
         );
       }
     });
@@ -54,7 +44,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
-                // Shopping Cart Logo
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -67,10 +56,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
                 TextField(
-                  controller: _emailController,
+                  controller: _identifierController,
                   style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
                   decoration: InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Usuario o correo',
+                    hintText: 'usuario o correo@ejemplo.com',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
                     filled: true,
@@ -98,9 +88,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ? null
                       : () {
                           ref.read(authProvider.notifier).signIn(
-                            _emailController.text,
-                            _passwordController.text,
-                          );
+                                _identifierController.text,
+                                _passwordController.text,
+                              );
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: SmartCartTheme.primaryColor,
@@ -117,52 +107,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         )
                       : const Text('Iniciar Sesión', style: TextStyle(fontSize: 16)),
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Theme.of(context).colorScheme.surfaceVariant)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('o', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
-                    ),
-                    Expanded(child: Divider(color: Theme.of(context).colorScheme.surfaceVariant)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: Container(width: 20, height: 20, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(4))),
-                        label: Text('Google', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          side: BorderSide(color: Colors.grey[300]!),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: Container(width: 20, height: 20, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(4))),
-                        label: Text('Apple', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          side: BorderSide(color: Colors.grey[300]!),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 48),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Olvidé contraseña', style: TextStyle(color: Colors.grey[500])),
+                    GestureDetector(
+                      onTap: () => _showForgotPasswordDialog(context),
+                      child: Text('Olvidé contraseña', style: TextStyle(color: Colors.grey[500])),
+                    ),
                     GestureDetector(
                       onTap: () {
                         Navigator.of(context).push(
@@ -177,6 +129,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recuperar contraseña'),
+        content: const Text(
+          'El backend aún no expone recuperación de contraseña. '
+          'Contacta a soporte de SmartCart si necesitas restablecer tu acceso.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Entendido')),
+        ],
       ),
     );
   }

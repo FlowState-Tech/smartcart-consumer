@@ -19,11 +19,22 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _currentIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(basketProvider.notifier).restoreSessionIfNeeded();
+    });
+  }
+
   void _switchTab(int index) {
     if (index == 1) {
       final remoteListId = ref.read(basketProvider).remoteListId;
       if (remoteListId != null) {
-        ref.read(comparisonProvider.notifier).comparePrices(remoteListId);
+        ref.read(comparisonProvider.notifier).comparePrices(remoteListId).then((_) {
+          final total = (ref.read(comparisonProvider).apiTotalCost?['totalCost'] as num?)?.toDouble();
+          if (total != null) ref.read(basketProvider.notifier).setApiTotalCost(total);
+        });
       }
     }
     setState(() {
@@ -38,8 +49,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         index: _currentIndex,
         children: [
           BasketHomeScreen(onNavigate: _switchTab),
-          const ComparadorScreen(),
-          const ActiveRouteMapScreen(),
+          ComparadorScreen(onNavigate: _switchTab),
+          ActiveRouteMapScreen(onJourneyFinished: () => _switchTab(3)),
           const ValidationScreen(),
           const ProfileScreen(),
         ],

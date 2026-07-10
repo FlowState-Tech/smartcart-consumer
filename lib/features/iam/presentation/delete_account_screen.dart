@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'login_screen.dart'; // To access authProvider
+import '../application/auth_notifier.dart';
+import '../../planning/application/basket_notifier.dart';
+import '../../journey/application/route_notifier.dart';
+import '../../experience/application/experience_notifier.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -29,9 +32,17 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
     super.dispose();
   }
 
-  void _onDelete() {
+  Future<void> _onDelete() async {
     if (_isButtonEnabled) {
-      ref.read(authProvider.notifier).deleteAccount();
+      await ref.read(basketProvider.notifier).clearAllLocalData();
+      ref.read(routeProvider.notifier).resetRoute();
+      await ref.read(experienceProvider.notifier).clearLocalData();
+      await ref.read(authProvider.notifier).deleteAccount();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Datos locales eliminados y sesión cerrada.')),
+      );
+      Navigator.of(context).pop();
     }
   }
 
@@ -55,7 +66,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Esta acción es irreversible. Se eliminará tu perfil, historial y listas guardadas.',
+              'Se eliminarán tus datos locales (canasta, recompensas, preferencias) y se cerrará la sesión. '
+              'La cuenta en el servidor no se elimina automáticamente porque el backend aún no expone ese endpoint.',
               style: Theme.of(context).textTheme.bodyLarge,
               textAlign: TextAlign.center,
             ),

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/smartcart_theme.dart';
-import '../../../core/presentation/main_navigation_screen.dart';
+import '../application/auth_notifier.dart';
 import '../application/auth_state.dart';
-import 'login_screen.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -15,7 +14,6 @@ class SignUpScreen extends ConsumerStatefulWidget {
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _acceptedTerms = false;
 
@@ -25,11 +23,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       if (next is AuthError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.message), backgroundColor: Colors.red),
-        );
-      } else if (next is AuthAuthenticated) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-          (route) => false,
         );
       }
     });
@@ -56,13 +49,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
                 ),
                 const SizedBox(height: 32),
-                Text('Nombre completo', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
+                Text('Nombre de usuario', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _nameController,
                   style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
                   decoration: InputDecoration(
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    hintText: 'Tu nombre de usuario',
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Theme.of(context).colorScheme.surfaceVariant)),
                     filled: true,
                     fillColor: Colors.transparent,
@@ -78,22 +71,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
                   decoration: InputDecoration(
                     hintText: 'correo@ejemplo.com',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Theme.of(context).colorScheme.surfaceVariant)),
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: SmartCartTheme.primaryColor, width: 2)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text('Teléfono', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
-                  decoration: InputDecoration(
-                    hintText: '+51 999 999 999',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Theme.of(context).colorScheme.surfaceVariant)),
                     filled: true,
@@ -141,9 +118,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     ? null 
                     : () {
                         if (_acceptedTerms) {
+                          if (_nameController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Ingresa un nombre de usuario')),
+                            );
+                            return;
+                          }
                           ref.read(authProvider.notifier).signUp(
-                            _emailController.text, 
-                            _passwordController.text
+                            _emailController.text,
+                            _passwordController.text,
+                            fullName: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(

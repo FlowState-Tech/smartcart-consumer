@@ -3,6 +3,7 @@ import 'value_objects.dart';
 
 class ProductItem extends Equatable {
   final String id;
+  final int? remoteItemId;
   final String name;
   final String brand;
   final double price;
@@ -14,6 +15,7 @@ class ProductItem extends Equatable {
 
   const ProductItem({
     required this.id,
+    this.remoteItemId,
     required this.name,
     required this.brand,
     required this.price,
@@ -24,6 +26,7 @@ class ProductItem extends Equatable {
 
   ProductItem copyWith({
     String? id,
+    int? remoteItemId,
     String? name,
     String? brand,
     double? price,
@@ -33,6 +36,7 @@ class ProductItem extends Equatable {
   }) {
     return ProductItem(
       id: id ?? this.id,
+      remoteItemId: remoteItemId ?? this.remoteItemId,
       name: name ?? this.name,
       brand: brand ?? this.brand,
       price: price ?? this.price,
@@ -43,7 +47,7 @@ class ProductItem extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, brand, price, quantity, storeType, normalizedUnitPrice];
+  List<Object?> get props => [id, remoteItemId, name, brand, price, quantity, storeType, normalizedUnitPrice];
 }
 
 class PriceProjection extends Equatable {

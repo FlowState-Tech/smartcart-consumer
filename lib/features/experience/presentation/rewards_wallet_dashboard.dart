@@ -13,7 +13,6 @@ class RewardsWalletDashboard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(experienceProvider);
 
-    // Show snackbar if there's an error message
     ref.listen<ExperienceState>(experienceProvider, (prev, next) {
       if (next.errorMessage != null && next.errorMessage != prev?.errorMessage && next.ocrStatus != OcrStatus.fallbackRequired) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -25,11 +24,10 @@ class RewardsWalletDashboard extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Recompensas & Wallet')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Points Card
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -54,57 +52,43 @@ class RewardsWalletDashboard extends ConsumerWidget {
                       backgroundColor: Colors.white,
                       foregroundColor: SmartCartTheme.primaryColor,
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
-            
             if (state.activeVoucher != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
                 child: Card(
-                  color: SmartCartTheme.accentColor, // Lima Suave
+                  color: SmartCartTheme.accentColor,
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        const Text('¡Vale Generado!', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('¡Vale generado!', style: TextStyle(fontWeight: FontWeight.bold)),
                         Text(state.activeVoucher!, style: const TextStyle(fontSize: 24, letterSpacing: 4)),
                       ],
                     ),
                   ),
                 ),
               ),
-
             const SizedBox(height: 24),
-            Text('Tus Insignias', style: Theme.of(context).textTheme.titleLarge),
+            Text('Tus insignias', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             if (state.badges.isEmpty)
               const Text('Aún no tienes insignias. ¡Valida precios para ganar puntos!')
             else
-              Row(
-                children: state.badges.map((badge) => Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Column(
-                    children: [
-                      const CircleAvatar(
-                        radius: 30,
-                        backgroundColor: SmartCartTheme.secondaryColor,
-                        child: Icon(Icons.explore, color: Colors.white, size: 30),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(badge.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                )).toList(),
-              ),
-
+              ...state.badges.map((b) => ListTile(
+                    leading: const Icon(Icons.military_tech, color: Colors.amber),
+                    title: Text(b.name),
+                    subtitle: Text(b.description),
+                  )),
             const SizedBox(height: 32),
-            Text('Acciones de Comunidad', style: Theme.of(context).textTheme.titleLarge),
+            Text('Acciones de comunidad', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.receipt_long),
-              title: const Text('Escanear Ticket de Compra'),
+              title: const Text('Escanear ticket de compra'),
               subtitle: const Text('Gana 25 puntos'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
@@ -113,11 +97,11 @@ class RewardsWalletDashboard extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.report_problem),
-              title: const Text('Reportar Oferta Falsa'),
+              title: const Text('Reportar oferta falsa'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 showModalBottomSheet(
-                  context: context, 
+                  context: context,
                   isScrollControlled: true,
                   builder: (_) => Padding(
                     padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -126,16 +110,6 @@ class RewardsWalletDashboard extends ConsumerWidget {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.location_on),
-              title: const Text('Validar Precio en Tienda'),
-              subtitle: const Text('Simula estar a < 500m'),
-              trailing: const Icon(Icons.add_circle, color: Colors.green),
-              onTap: () {
-                // Mocking GPS validation success (distance 0m)
-                ref.read(experienceProvider.notifier).validateInStorePrice(-12.0, -77.0, -12.0, -77.0);
-              },
-            )
           ],
         ),
       ),

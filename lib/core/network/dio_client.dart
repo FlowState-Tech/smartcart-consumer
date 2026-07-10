@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart';
+import '../config/app_config.dart';
+import 'session_events.dart';
 
 class DioClient {
   final Dio _dio;
@@ -11,7 +13,7 @@ class DioClient {
   })  : _secureStorage = secureStorage,
         _dio = Dio(
           BaseOptions(
-            baseUrl: 'https://smartcart-api-production.up.railway.app/api/v1',
+            baseUrl: AppConfig.apiBaseUrl,
             connectTimeout: const Duration(milliseconds: 15000),
             receiveTimeout: const Duration(milliseconds: 15000),
             sendTimeout: const Duration(milliseconds: 15000),
@@ -24,7 +26,6 @@ class DioClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Automatically inject bearer JWT token
           final token = await _secureStorage.read(key: 'jwt_token');
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -32,13 +33,12 @@ class DioClient {
           return handler.next(options);
         },
         onError: (DioException e, handler) async {
-          // Handle 401 Unauthorized exceptions safely
           if (e.response?.statusCode == 401) {
-            debugPrint('401 Unauthorized detected. Session expired or invalid token.');
-            // Clear token to force re-authentication or refresh flow
+            debugPrint('401 Unauthorized — session expired.');
             await _secureStorage.delete(key: 'jwt_token');
-            // Depending on the architecture, you could dispatch an event to the AuthBloc here,
-            // or trigger a refresh token request if refresh tokens are stored.
+            await _secureStorage.delete(key: 'user_email');
+            await _secureStorage.delete(key: 'user_id');
+            SessionEvents.notifySessionExpired();
           }
           return handler.next(e);
         },

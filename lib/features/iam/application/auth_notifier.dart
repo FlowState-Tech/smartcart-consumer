@@ -1,7 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/di/injection_container.dart';
 import '../domain/auth_repository.dart';
 import '../domain/value_objects.dart';
 import 'auth_state.dart';
+
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  return sl<AuthNotifier>();
+});
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repository;
@@ -20,24 +25,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signIn(String emailStr, String passwordStr) async {
+  Future<void> signIn(String identifier, String passwordStr) async {
     state = AuthLoading();
     try {
-      final email = UserEmail(emailStr);
       final password = UserPassword(passwordStr);
-      final user = await _repository.signIn(email, password);
+      final user = await _repository.signIn(identifier.trim(), password);
       state = AuthAuthenticated(user);
     } catch (e) {
       state = AuthError(e.toString());
     }
   }
 
-  Future<void> signUp(String emailStr, String passwordStr) async {
+  Future<void> signUp(String emailStr, String passwordStr, {String? fullName}) async {
     state = AuthLoading();
     try {
       final email = UserEmail(emailStr);
       final password = UserPassword(passwordStr);
-      final user = await _repository.signUp(email, password);
+      final user = await _repository.signUp(email, password, username: fullName);
       state = AuthAuthenticated(user);
     } catch (e) {
       state = AuthError(e.toString());
@@ -50,12 +54,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthUnauthenticated();
   }
 
+  void forceLogout() {
+    state = AuthUnauthenticated();
+  }
+
   Future<void> deleteAccount() async {
     if (state is AuthAuthenticated) {
-      final user = (state as AuthAuthenticated).user;
       state = AuthLoading();
       try {
-        await _repository.deleteAccount(user.token);
+        await _repository.deleteAccount();
         state = AuthUnauthenticated();
       } catch (e) {
         state = AuthError(e.toString());

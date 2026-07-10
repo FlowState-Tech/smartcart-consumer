@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SmartCart necesita tu ubicación para calcular rutas y validar que estás en la tienda.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SmartCart usa la cámara para escanear tickets y códigos de barras.</string>
 </dict>
 </plist>

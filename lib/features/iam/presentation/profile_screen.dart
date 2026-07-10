@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'login_screen.dart'; // for authProvider
+import 'package:geolocator/geolocator.dart';
+import '../application/auth_notifier.dart';
 import '../application/auth_state.dart';
 import 'delete_account_screen.dart';
-import 'delete_account_screen.dart';
+import 'favorites_screen.dart';
+import '../../../core/di/injection_container.dart';
+import '../../../core/providers/session_providers.dart';
 import '../../../core/theme/smartcart_theme.dart';
 import '../../../core/theme/theme_notifier.dart';
+import '../../experience/application/experience_notifier.dart';
+import '../../experience/presentation/rewards_wallet_dashboard.dart';
+import '../../notifications/application/notifications_notifier.dart';
+import '../../planning/infrastructure/preferences_remote_data_source.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -15,32 +22,124 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _notifications = true;
-  bool _location = true;
+  bool _locationEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadLocationPref());
+  }
+
+  Future<void> _loadLocationPref() async {
+    try {
+      final buyerId = ref.read(currentBuyerIdProvider);
+      final prefs = await sl<PreferencesRemoteDataSource>().getPreferences(buyerId);
+      if (mounted) {
+        setState(() {
+          _locationEnabled = prefs['homeLatitude'] != null && prefs['homeLongitude'] != null;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleLocation(bool value) async {
+    setState(() => _locationEnabled = value);
+    if (!value) return;
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Activa permisos de ubicación en ajustes del sistema')),
+        );
+        setState(() => _locationEnabled = false);
+      }
+      return;
+    }
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      final buyerId = ref.read(currentBuyerIdProvider);
+      await sl<PreferencesRemoteDataSource>().updatePreferences(buyerId, {
+        'homeLatitude': pos.latitude,
+        'homeLongitude': pos.longitude,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ubicación de residencia actualizada')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  void _showNotificationHistory() {
+    final notifState = ref.read(notificationsProvider);
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Historial de notificaciones', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            if (notifState.history.isEmpty)
+              const Padding(padding: EdgeInsets.all(16), child: Text('Sin notificaciones recientes'))
+            else
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ...notifState.history.map((n) => ListTile(
+                          title: Text(n['title']?.toString() ?? n['message']?.toString() ?? 'Notificación'),
+                          subtitle: Text(n['createdAt']?.toString() ?? ''),
+                        )),
+                    if (notifState.hasMoreHistory)
+                      TextButton(
+                        onPressed: notifState.isLoadingMore
+                            ? null
+                            : () => ref.read(notificationsProvider.notifier).loadMoreHistory(),
+                        child: notifState.isLoadingMore
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Cargar más'),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final expState = ref.watch(experienceProvider);
+    final notifState = ref.watch(notificationsProvider);
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == ThemeMode.dark;
 
     ref.listen(authProvider, (prev, next) {
-      if (next is AuthUnauthenticated) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
+      if (next is AuthError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.message), backgroundColor: Colors.red),
         );
       }
     });
 
-    String email = 'juan.perez@email.com';
-    String name = 'Juan Pérez';
+    String email = 'usuario@email.com';
+    String name = 'Usuario';
     if (authState is AuthAuthenticated) {
       email = authState.user.email.value;
-      name = email.split('@').first;
-      if (name.isNotEmpty) {
-        name = name[0].toUpperCase() + name.substring(1);
-      }
+      name = authState.user.displayName;
     }
 
     return Scaffold(
@@ -49,7 +148,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Top decorative curve and profile info
               Stack(
                 alignment: Alignment.topCenter,
                 children: [
@@ -65,23 +163,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     padding: const EdgeInsets.only(top: 60.0),
                     child: Column(
                       children: [
-                        Text(
-                          name,
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
-                        ),
+                        Text(name, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                         const SizedBox(height: 8),
-                        Text(
-                          email,
-                          style: TextStyle(fontSize: 16, color: Theme.of(context).textTheme.bodyMedium?.color),
-                        ),
+                        Text(email, style: TextStyle(fontSize: 16, color: Theme.of(context).textTheme.bodyMedium?.color)),
                         const SizedBox(height: 32),
-                        // Stats Row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _buildStat(context, '124', 'Puntos', SmartCartTheme.primaryColor),
-                            _buildStat(context, '28', 'Compras', Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87),
-                            _buildStat(context, 'S/ 420', 'Ahorrado', Colors.tealAccent.shade400),
+                            _buildStat(context, '${expState.walletBalance.points}', 'Puntos', SmartCartTheme.primaryColor),
+                            _buildStat(context, '${expState.purchasesCount}', 'Compras', Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87),
+                            _buildStat(context, 'S/ ${expState.totalSavings.toStringAsFixed(0)}', 'Ahorrado', Colors.tealAccent.shade400),
                           ],
                         ),
                       ],
@@ -90,25 +181,58 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ],
               ),
               const SizedBox(height: 32),
-              
-              // List Options
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
-                    _buildOption(context, icon: Icons.star, iconColor: Colors.amber, title: 'Favoritas', onTap: () {}),
+                    _buildOption(context, icon: Icons.star, iconColor: Colors.amber, title: 'Favoritas', onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FavoritesScreen()));
+                    }),
                     const SizedBox(height: 12),
-                    _buildToggleOption(context, icon: Icons.notifications, iconColor: Colors.orange, title: 'Notificaciones', value: _notifications, onChanged: (v) => setState(() => _notifications = v)),
+                    _buildOption(context, icon: Icons.wallet, iconColor: SmartCartTheme.primaryColor, title: 'Recompensas', onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RewardsWalletDashboard()));
+                    }),
+                    const SizedBox(height: 12),
+                    _buildToggleOption(
+                      context,
+                      icon: Icons.notifications,
+                      iconColor: Colors.orange,
+                      title: notifState.isLoading ? 'Notificaciones...' : 'Notificaciones push',
+                      value: notifState.pushEnabled,
+                      onChanged: notifState.isLoading ? null : (v) => ref.read(notificationsProvider.notifier).setPushEnabled(v),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildToggleOption(
+                      context,
+                      icon: Icons.email_outlined,
+                      iconColor: Colors.blue,
+                      title: 'Notificaciones email',
+                      value: notifState.emailEnabled,
+                      onChanged: notifState.isLoading ? null : (v) => ref.read(notificationsProvider.notifier).setEmailEnabled(v),
+                    ),
                     const SizedBox(height: 12),
                     _buildToggleOption(context, icon: Icons.nightlight_round, iconColor: Colors.orangeAccent, title: 'Modo oscuro', value: isDark, onChanged: (v) {
                       ref.read(themeProvider.notifier).toggleTheme(v);
                     }),
                     const SizedBox(height: 12),
-                    _buildToggleOption(context, icon: Icons.location_on, iconColor: Colors.pinkAccent, title: 'Ubicación', value: _location, onChanged: (v) => setState(() => _location = v)),
+                    _buildToggleOption(context, icon: Icons.location_on, iconColor: Colors.pinkAccent, title: 'Ubicación', value: _locationEnabled, onChanged: _toggleLocation),
                     const SizedBox(height: 12),
-                    _buildOption(context, icon: Icons.bar_chart, iconColor: Colors.blueAccent, title: 'Historial', onTap: () {}),
+                    _buildOption(context, icon: Icons.bar_chart, iconColor: Colors.blueAccent, title: 'Historial', onTap: _showNotificationHistory),
                     const SizedBox(height: 12),
-                    _buildOption(context, icon: Icons.emoji_events, iconColor: Colors.brown, title: 'Logros', onTap: () {}),
+                    _buildOption(context, icon: Icons.emoji_events, iconColor: Colors.brown, title: 'Logros (${expState.badges.length})', onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Logros'),
+                          content: expState.badges.isEmpty
+                              ? const Text('Aún no has desbloqueado logros')
+                              : Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: expState.badges.map((b) => ListTile(title: Text(b.name), subtitle: Text(b.description))).toList(),
+                                ),
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 12),
                     _buildOption(context, icon: Icons.logout, iconColor: Colors.grey, title: 'Cerrar Sesión', onTap: () {
                       ref.read(authProvider.notifier).logout();
@@ -120,7 +244,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 32),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -140,10 +264,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildOption(BuildContext context, {required IconData icon, required Color iconColor, required String title, required VoidCallback onTap, bool isDestructive = false}) {
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant)),
       child: Material(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -158,12 +279,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildToggleOption(BuildContext context, {required IconData icon, required Color iconColor, required String title, required bool value, required ValueChanged<bool> onChanged}) {
+  Widget _buildToggleOption(BuildContext context, {required IconData icon, required Color iconColor, required String title, required bool value, required ValueChanged<bool>? onChanged}) {
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant)),
       child: Material(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
