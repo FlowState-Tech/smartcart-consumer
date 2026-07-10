@@ -23,6 +23,30 @@ class _ProductSearchModalState extends ConsumerState<ProductSearchModal> {
   List<Map<String, dynamic>> _results = [];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPopular());
+  }
+
+  Future<void> _loadPopular() async {
+    setState(() => _isSearching = true);
+    try {
+      final catalog = sl<ProductCatalogService>();
+      final buyerId = ref.read(optionalBuyerIdProvider);
+      final results = await catalog.getPopularProducts(buyerId: buyerId);
+      if (mounted) setState(() => _results = results);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudieron cargar productos: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -30,14 +54,14 @@ class _ProductSearchModalState extends ConsumerState<ProductSearchModal> {
 
   Future<void> _search(String query) async {
     if (query.trim().isEmpty) {
-      setState(() => _results = []);
+      await _loadPopular();
       return;
     }
 
     setState(() => _isSearching = true);
     try {
       final catalog = sl<ProductCatalogService>();
-      final buyerId = ref.read(currentBuyerIdProvider);
+      final buyerId = ref.read(optionalBuyerIdProvider);
       final results = await catalog.search(query.trim(), buyerId: buyerId);
       setState(() => _results = results);
     } catch (e) {
@@ -115,6 +139,8 @@ class _ProductSearchModalState extends ConsumerState<ProductSearchModal> {
             decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2)),
           ),
           Text('Buscar productos', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text('Productos del catálogo del backend', style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -148,8 +174,9 @@ class _ProductSearchModalState extends ConsumerState<ProductSearchModal> {
             child: _results.isEmpty
                 ? Center(
                     child: Text(
-                      _searchController.text.isEmpty ? 'Busca o escanea un producto' : 'Sin resultados',
+                      _isSearching ? 'Cargando productos...' : 'Sin resultados. Prueba "leche" o "GL-123"',
                       style: const TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
                     ),
                   )
                 : ListView.builder(

@@ -19,14 +19,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next is AuthError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.message), backgroundColor: Colors.red),
-        );
-      }
-    });
-
     final authState = ref.watch(authProvider);
 
     return Scaffold(
@@ -114,27 +106,53 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: authState is AuthLoading 
-                    ? null 
-                    : () {
-                        if (_acceptedTerms) {
-                          if (_nameController.text.trim().isEmpty) {
+                  onPressed: authState is AuthLoading
+                      ? null
+                      : () async {
+                          if (!_acceptedTerms) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Debes aceptar los términos y condiciones')),
+                            );
+                            return;
+                          }
+                          final username = _nameController.text.trim();
+                          if (username.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Ingresa un nombre de usuario')),
                             );
                             return;
                           }
-                          ref.read(authProvider.notifier).signUp(
-                            _emailController.text,
-                            _passwordController.text,
-                            fullName: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Debes aceptar los términos y condiciones'))
-                          );
-                        }
-                      },
+                          if (_passwordController.text.length < 8) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('La contraseña debe tener al menos 8 caracteres')),
+                            );
+                            return;
+                          }
+                          final email = _emailController.text.trim();
+                          if (email.isEmpty || !email.contains('@')) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Ingresa un correo electrónico válido')),
+                            );
+                            return;
+                          }
+                          try {
+                            await ref.read(authProvider.notifier).signUp(
+                                  email,
+                                  _passwordController.text,
+                                  fullName: username,
+                                );
+                            if (!context.mounted) return;
+                            Navigator.of(context).popUntil((route) => route.isFirst);
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(AuthNotifier.cleanError(e)),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: SmartCartTheme.primaryColor,
                     foregroundColor: Colors.white,

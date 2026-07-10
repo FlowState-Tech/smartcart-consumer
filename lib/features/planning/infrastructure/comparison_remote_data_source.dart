@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../../core/network/api_response_utils.dart';
 import '../../../core/network/dio_client.dart';
 
 class ComparisonRemoteDataSource {
@@ -12,12 +13,7 @@ class ComparisonRemoteDataSource {
         '/planning/lists/$listId/compare-prices',
         queryParameters: storeFormat != null ? {'storeFormat': storeFormat} : null,
       );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data.cast<Map<String, dynamic>>();
-      }
-      throw Exception('Failed to compare prices');
+      return ApiResponseUtils.asListOfMaps(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Network error during comparison');
     }
@@ -35,9 +31,9 @@ class ComparisonRemoteDataSource {
   Future<List<Map<String, dynamic>>> lookupBarcode(String barcode) async {
     try {
       final response = await _client.dio.get('/planning/barcode/$barcode');
-      final List<dynamic> data = response.data;
-      return data.cast<Map<String, dynamic>>();
+      return ApiResponseUtils.asListOfMaps(response.data);
     } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return [];
       throw Exception(e.response?.data['message'] ?? 'Producto no encontrado');
     }
   }
@@ -54,8 +50,14 @@ class ComparisonRemoteDataSource {
   Future<List<String>> verifyStock(int listId, int storeId) async {
     try {
       final response = await _client.dio.get('/planning/lists/$listId/stores/$storeId/stock');
-      final List<dynamic> data = response.data;
-      return data.cast<String>();
+      final items = ApiResponseUtils.asListOfMaps(response.data);
+      if (items.isNotEmpty) {
+        return items.map((e) => e['sku']?.toString() ?? e.toString()).toList();
+      }
+      if (response.data is List) {
+        return (response.data as List).map((e) => e.toString()).toList();
+      }
+      return [];
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Error al verificar stock');
     }
@@ -76,8 +78,7 @@ class ComparisonRemoteDataSource {
   Future<List<Map<String, dynamic>>> getAllSubstitutes(int listId, int storeId) async {
     try {
       final response = await _client.dio.get('/planning/lists/$listId/stores/$storeId/substitutes/all');
-      final List<dynamic> data = response.data;
-      return data.cast<Map<String, dynamic>>();
+      return ApiResponseUtils.asListOfMaps(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Error al obtener sustitutos');
     }

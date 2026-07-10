@@ -18,14 +18,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next is AuthError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.message), backgroundColor: Colors.red),
-        );
-      }
-    });
-
     final authState = ref.watch(authProvider);
 
     return Scaffold(
@@ -60,7 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
                   decoration: InputDecoration(
                     labelText: 'Usuario o correo',
-                    hintText: 'usuario o correo@ejemplo.com',
+                    hintText: 'El usuario con el que te registraste',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
                     filled: true,
@@ -86,11 +78,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ElevatedButton(
                   onPressed: authState is AuthLoading
                       ? null
-                      : () {
-                          ref.read(authProvider.notifier).signIn(
-                                _identifierController.text,
-                                _passwordController.text,
-                              );
+                      : () async {
+                          try {
+                            await ref.read(authProvider.notifier).signIn(
+                                  _identifierController.text,
+                                  _passwordController.text,
+                                );
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(AuthNotifier.cleanError(e)),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: SmartCartTheme.primaryColor,

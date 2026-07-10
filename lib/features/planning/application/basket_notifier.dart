@@ -13,6 +13,7 @@ import '../infrastructure/preferences_remote_data_source.dart';
 import '../infrastructure/comparison_remote_data_source.dart';
 import '../infrastructure/product_catalog_service.dart';
 import '../infrastructure/store_remote_data_source.dart';
+import '../../../core/network/api_response_utils.dart';
 import '../../../core/providers/session_providers.dart';
 
 typedef BuyerIdResolver = int Function();
@@ -34,7 +35,7 @@ class BasketNotifier extends StateNotifier<BasketState> {
     this._storeDataSource,
     this._favoritesStorage, {
     BuyerIdResolver? getBuyerId,
-  })  : _getBuyerId = getBuyerId ?? (() => 1),
+  })  : _getBuyerId = getBuyerId ?? (() => throw StateError('buyerId no configurado')),
         super(const BasketState(shoppingList: ShoppingList(id: 'default', items: []))) {
     Future.microtask(() async {
       await _loadFavorites();
@@ -51,7 +52,7 @@ class BasketNotifier extends StateNotifier<BasketState> {
     try {
       final lists = await _dataSource.getListsByBuyer(_getBuyerId());
       if (lists.isEmpty) return;
-      final last = lists.last as Map<String, dynamic>;
+      final last = lists.last;
       final listId = (last['id'] as num?)?.toInt();
       if (listId != null) await switchToList(listId);
     } catch (_) {}
@@ -95,9 +96,8 @@ class BasketNotifier extends StateNotifier<BasketState> {
   Future<List<Map<String, dynamic>>> fetchBuyerLists() async {
     try {
       final lists = await _dataSource.getListsByBuyer(_getBuyerId());
-      final typed = lists.cast<Map<String, dynamic>>();
-      state = state.copyWith(buyerLists: typed);
-      return typed;
+      state = state.copyWith(buyerLists: lists);
+      return lists;
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString());
       return [];
@@ -139,12 +139,13 @@ class BasketNotifier extends StateNotifier<BasketState> {
       final item = raw as Map<String, dynamic>;
       final sku = item['sku'] as String? ?? item['id'].toString();
       final previous = previousBySku[sku];
+      final serverPrice = ApiResponseUtils.readPrice(item);
       return ProductItem(
         id: sku,
         remoteItemId: (item['id'] as num?)?.toInt(),
-        name: item['productName'] as String? ?? previous?.name ?? 'Producto',
-        brand: previous?.brand ?? '',
-        price: previous?.price ?? 0,
+        name: item['productName'] as String? ?? item['name'] as String? ?? previous?.name ?? 'Producto',
+        brand: item['brand'] as String? ?? previous?.brand ?? '',
+        price: serverPrice ?? previous?.price ?? 0,
         quantity: Quantity((item['quantity'] as num?)?.toDouble() ?? 1, item['unit'] as String? ?? 'unit'),
         storeType: previous?.storeType ?? 'supermarket',
         normalizedUnitPrice: previous?.normalizedUnitPrice,
@@ -208,7 +209,9 @@ class BasketNotifier extends StateNotifier<BasketState> {
           buyerId,
           'Mi Canasta ${DateTime.now().millisecondsSinceEpoch % 10000}',
         );
-        listId = (createRes['id'] as num?)?.toInt() ?? 1;
+        final createdId = _readListId(createRes);
+        if (createdId == null) throw Exception('No se pudo crear la canasta');
+        listId = createdId;
         state = state.copyWith(remoteListId: listId);
       }
 
@@ -287,7 +290,7 @@ class BasketNotifier extends StateNotifier<BasketState> {
         return;
       }
 
-      final last = lists.last as Map<String, dynamic>;
+      final last = lists.last;
       final listId = (last['id'] as num?)?.toInt();
       if (listId == null) throw Exception('Lista inválida');
 
@@ -318,7 +321,8 @@ class BasketNotifier extends StateNotifier<BasketState> {
       int listId = state.remoteListId ?? 0;
       if (listId == 0) {
         final createRes = await _dataSource.createList(buyerId, 'Canasta familiar');
-        listId = (createRes['id'] as num?)?.toInt() ?? 1;
+        listId = _readListId(createRes) ?? 0;
+        if (listId == 0) throw Exception('No se pudo crear la canasta');
         state = state.copyWith(remoteListId: listId);
       }
       final listResponse = await _dataSource.applyFamilyBasket(buyerId, listId);
@@ -441,6 +445,12 @@ class BasketNotifier extends StateNotifier<BasketState> {
 
   void clearMessages() {
     state = state.copyWith(clearMessages: true);
+  }
+
+  int? _readListId(Map<String, dynamic> data) {
+    final raw = data['id'] ?? data['listId'] ?? data['shoppingListId'];
+    if (raw is num) return raw.toInt();
+    return int.tryParse(raw?.toString() ?? '');
   }
 
   Future<void> clearAllLocalData() async {

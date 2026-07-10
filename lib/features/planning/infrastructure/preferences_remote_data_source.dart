@@ -11,7 +11,8 @@ class PreferencesRemoteDataSource {
       final response = await _client.dio.get('/planning/preferences/$buyerId');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Error al obtener preferencias');
+      if (e.response?.statusCode == 404) return {};
+      throw Exception(_message(e, 'Error al obtener preferencias'));
     }
   }
 
@@ -20,7 +21,7 @@ class PreferencesRemoteDataSource {
       final response = await _client.dio.put('/planning/preferences/$buyerId', data: body);
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Error al guardar preferencias');
+      throw Exception(_message(e, 'Error al guardar preferencias'));
     }
   }
 
@@ -32,7 +33,13 @@ class PreferencesRemoteDataSource {
       });
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Error al guardar tiendas favoritas');
+      throw Exception(_message(e, 'Error al guardar tiendas favoritas'));
     }
+  }
+
+  String _message(DioException e, String fallback) {
+    final data = e.response?.data;
+    if (data is Map && data['message'] != null) return data['message'].toString();
+    return fallback;
   }
 }

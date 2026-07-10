@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../../core/network/api_response_utils.dart';
 import '../../../core/network/dio_client.dart';
 
 class StoreRemoteDataSource {
@@ -33,12 +34,7 @@ class StoreRemoteDataSource {
         },
       );
       final data = response.data;
-      if (data is List) return data.cast<Map<String, dynamic>>();
-      if (data is Map) {
-        final content = data['content'] as List<dynamic>? ?? data['items'] as List<dynamic>?;
-        if (content != null) return content.cast<Map<String, dynamic>>();
-      }
-      return [];
+      return ApiResponseUtils.asListOfMaps(data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Error al buscar inventario');
     }

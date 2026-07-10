@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import '../domain/value_objects.dart';
-import '../domain/entities.dart';
 
 enum OcrStatus { idle, loading, success, fallbackRequired }
 

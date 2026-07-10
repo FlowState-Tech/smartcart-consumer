@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../network/dio_client.dart';import '../services/favorites_storage.dart';
+import '../network/dio_client.dart';
+import '../services/favorites_storage.dart';
 import '../services/wallet_storage.dart';
 import '../../features/iam/domain/auth_repository.dart';
 import '../../features/iam/infrastructure/auth_remote_data_source.dart';
@@ -14,14 +15,15 @@ import '../../features/planning/infrastructure/product_catalog_service.dart';
 import '../../features/journey/infrastructure/shopping_journey_remote_data_source.dart';
 import '../../features/experience/infrastructure/experience_remote_data_source.dart';
 import '../../features/experience/infrastructure/mlkit_ocr_scanner_impl.dart';
-import '../../features/experience/domain/ocr_scanner_interface.dart';import '../../features/notifications/infrastructure/notifications_remote_data_source.dart';
+import '../../features/experience/domain/ocr_scanner_interface.dart';
+import '../../features/notifications/infrastructure/notifications_remote_data_source.dart';
 
 final sl = GetIt.instance;
 
 Future<void> init() async {
   sl.registerLazySingleton<FlutterSecureStorage>(
     () => const FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true),
+      aOptions: AndroidOptions(),
     ),
   );
 
@@ -76,6 +78,7 @@ Future<void> init() async {
   sl.registerLazySingleton<OcrScannerInterface>(
     () => MlKitOcrScannerImpl(),
   );
+
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(sl(), sl()),
   );

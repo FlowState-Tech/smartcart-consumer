@@ -32,19 +32,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _repository.signIn(identifier.trim(), password);
       state = AuthAuthenticated(user);
     } catch (e) {
-      state = AuthError(e.toString());
+      state = AuthUnauthenticated();
+      rethrow;
     }
   }
 
   Future<void> signUp(String emailStr, String passwordStr, {String? fullName}) async {
     state = AuthLoading();
     try {
-      final email = UserEmail(emailStr);
+      final email = UserEmail(emailStr.trim());
       final password = UserPassword(passwordStr);
-      final user = await _repository.signUp(email, password, username: fullName);
+      final user = await _repository.signUp(email, password, username: fullName?.trim());
       state = AuthAuthenticated(user);
     } catch (e) {
-      state = AuthError(e.toString());
+      state = AuthUnauthenticated();
+      rethrow;
     }
   }
 
@@ -65,8 +67,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _repository.deleteAccount();
         state = AuthUnauthenticated();
       } catch (e) {
-        state = AuthError(e.toString());
+        state = AuthUnauthenticated();
+        rethrow;
       }
     }
+  }
+
+  static String cleanError(Object error) {
+    if (error is ArgumentError) {
+      final msg = error.message?.toString() ?? '';
+      if (msg.toLowerCase().contains('email')) {
+        return 'Ingresa un correo electrónico válido';
+      }
+      if (msg.toLowerCase().contains('password')) {
+        return 'La contraseña debe tener al menos 8 caracteres';
+      }
+    }
+    final raw = error.toString().replaceFirst('Exception: ', '').trim();
+    if (raw.isEmpty || raw == 'null') return 'Ocurrió un error. Intenta de nuevo.';
+    return raw;
   }
 }

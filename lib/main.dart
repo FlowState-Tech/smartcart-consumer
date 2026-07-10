@@ -6,6 +6,7 @@ import 'core/presentation/auth_gate.dart';
 import 'core/theme/theme_notifier.dart';
 import 'core/network/session_events.dart';
 import 'features/iam/application/auth_notifier.dart';
+import 'features/iam/application/auth_state.dart';
 
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -14,7 +15,9 @@ void main() async {
   await di.init();
 
   SessionEvents.onSessionExpired = () {
-    di.sl<AuthNotifier>().forceLogout();
+    final auth = di.sl<AuthNotifier>();
+    if (auth.state is! AuthAuthenticated) return;
+    auth.forceLogout();
     scaffoldMessengerKey.currentState?.showSnackBar(
       const SnackBar(
         content: Text('Tu sesión expiró. Inicia sesión nuevamente.'),

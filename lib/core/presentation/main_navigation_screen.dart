@@ -22,8 +22,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(basketProvider.notifier).restoreSessionIfNeeded();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(basketProvider.notifier).restoreSessionIfNeeded();
+      await ref.read(basketProvider.notifier).fetchBuyerLists();
     });
   }
 

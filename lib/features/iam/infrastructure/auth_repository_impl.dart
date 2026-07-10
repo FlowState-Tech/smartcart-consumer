@@ -12,6 +12,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserAggregate> signIn(String identifier, UserPassword password) async {
+    await _clearStaleToken();
+
     final storedEmail = await _secureStorage.read(key: 'user_email');
     final storedUsername = await _secureStorage.read(key: 'user_username');
     final isEmail = identifier.contains('@');
@@ -34,7 +36,7 @@ class AuthRepositoryImpl implements AuthRepository {
         final response = await _remoteDataSource.signIn(
           username: username,
           password: password.value,
-          email: isEmail ? identifier.trim() : null,
+          email: isEmail ? identifier.trim() : storedEmail,
         );
         return _persistSession(
           response,
@@ -50,6 +52,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserAggregate> signUp(UserEmail email, UserPassword password, {String? username}) async {
+    await _secureStorage.deleteAll();
     final response = await _remoteDataSource.signUp(
       email.value,
       password.value,
@@ -71,24 +74,32 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserAggregate?> checkSession() async {
     final token = await _secureStorage.read(key: 'jwt_token');
-    if (token == null || token.isEmpty) return null;
+    final email = await _secureStorage.read(key: 'user_email');
+    final id = await _secureStorage.read(key: 'user_id');
+    final username = await _secureStorage.read(key: 'user_username');
+
+    if (token == null || token.isEmpty || id == null || id.isEmpty) {
+      return null;
+    }
+
+    final resolvedEmail = email ?? _syntheticEmail(username);
+    if (resolvedEmail == null) return null;
 
     try {
-      final me = await _remoteDataSource.getCurrentUser();
-      final response = {
-        'token': token,
-        'user_id': me['id']?.toString() ?? me['userId']?.toString(),
-        'username': me['username']?.toString(),
-        'email': me['email']?.toString(),
-      };
-      return _persistSession(
-        response,
-        fallbackEmail: await _secureStorage.read(key: 'user_email'),
+      return UserAggregate(
+        id: id,
+        email: UserEmail(resolvedEmail),
+        token: token,
+        username: username,
       );
     } catch (_) {
       await _secureStorage.deleteAll();
       return null;
     }
+  }
+
+  Future<void> _clearStaleToken() async {
+    await _secureStorage.delete(key: 'jwt_token');
   }
 
   Future<UserAggregate> _persistSession(
@@ -98,10 +109,14 @@ class AuthRepositoryImpl implements AuthRepository {
     final token = response['token'] as String?;
     final id = response['user_id']?.toString();
     final username = response['username']?.toString();
-    final email = response['email']?.toString() ?? fallbackEmail;
+    var email = response['email']?.toString() ?? fallbackEmail;
+
+    if ((email == null || email.isEmpty) && username != null && username.isNotEmpty) {
+      email = _syntheticEmail(username);
+    }
 
     if (token == null || token.isEmpty || id == null || id.isEmpty || email == null || email.isEmpty) {
-      throw Exception('Respuesta de autenticación incompleta');
+      throw Exception('No se pudo guardar la sesión. Intenta iniciar sesión manualmente.');
     }
 
     await _secureStorage.write(key: 'jwt_token', value: token);
@@ -117,5 +132,12 @@ class AuthRepositoryImpl implements AuthRepository {
       token: token,
       username: username,
     );
+  }
+
+  String? _syntheticEmail(String? username) {
+    if (username == null || username.isEmpty) return null;
+    final safe = username.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '');
+    if (safe.isEmpty) return null;
+    return '$safe@smartcart.app';
   }
 }

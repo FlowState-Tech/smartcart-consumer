@@ -198,7 +198,12 @@ class BasketHomeScreen extends ConsumerWidget {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/canasta_smartcart.pdf');
     await file.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(file.path)], text: 'Mi canasta SmartCart');
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        text: 'Mi canasta SmartCart',
+      ),
+    );
   }
 
   Widget _buildFavorites(BuildContext context, BasketState state, WidgetRef ref) {

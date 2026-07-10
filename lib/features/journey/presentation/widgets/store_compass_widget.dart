@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-import 'package:geolocator/geolocator.dart';
 import 'dart:math' as math;
 import '../../domain/value_objects.dart';
 import '../../domain/entities.dart';

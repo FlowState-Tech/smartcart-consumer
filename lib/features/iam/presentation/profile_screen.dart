@@ -12,7 +12,9 @@ import '../../../core/theme/theme_notifier.dart';
 import '../../experience/application/experience_notifier.dart';
 import '../../experience/presentation/rewards_wallet_dashboard.dart';
 import '../../notifications/application/notifications_notifier.dart';
+import '../../planning/application/basket_notifier.dart';
 import '../../planning/infrastructure/preferences_remote_data_source.dart';
+import '../../journey/application/route_notifier.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -127,14 +129,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == ThemeMode.dark;
 
-    ref.listen(authProvider, (prev, next) {
-      if (next is AuthError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.message), backgroundColor: Colors.red),
-        );
-      }
-    });
-
     String email = 'usuario@email.com';
     String name = 'Usuario';
     if (authState is AuthAuthenticated) {
@@ -234,8 +228,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
                     }),
                     const SizedBox(height: 12),
-                    _buildOption(context, icon: Icons.logout, iconColor: Colors.grey, title: 'Cerrar Sesión', onTap: () {
-                      ref.read(authProvider.notifier).logout();
+                    _buildOption(context, icon: Icons.logout, iconColor: Colors.grey, title: 'Cerrar Sesión', onTap: () async {
+                      await ref.read(basketProvider.notifier).clearAllLocalData();
+                      ref.read(routeProvider.notifier).resetRoute();
+                      await ref.read(experienceProvider.notifier).clearLocalData();
+                      await ref.read(authProvider.notifier).logout();
                     }),
                     const SizedBox(height: 12),
                     _buildOption(context, icon: Icons.delete_forever, iconColor: Colors.red, title: 'Baja de Servicio', isDestructive: true, onTap: () {
@@ -291,7 +288,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           title: Text(title, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 16)),
           value: value,
           onChanged: onChanged,
-          activeColor: Colors.white,
+          activeThumbColor: Colors.white,
           activeTrackColor: SmartCartTheme.primaryColor,
         ),
       ),
